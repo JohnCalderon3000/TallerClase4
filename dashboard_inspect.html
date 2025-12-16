@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Banco Demo</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <nav class="navbar">
+            <div class="navbar-content">
+                <div class="nav-brand">🏦 Banco Demo</div>
+                
+                <ul class="nav-menu">
+                    <li><a href="consulta-saldo.html" data-testid="nav-cuentas">Mis Cuentas</a></li>
+                    <li><a href="solicitud-prestamo.html" data-testid="nav-prestamos">Préstamos</a></li>
+                    <li><a href="mis-solicitudes.html">Mis Solicitudes</a></li>
+                </ul>
+                
+                <div class="nav-actions">
+                    <span class="user-welcome" id="userWelcome" data-testid="user-welcome">
+                        Bienvenido, Usuario
+                    </span>
+                    <button 
+                        class="btn-logout" 
+                        data-testid="btn-logout"
+                        onclick="logout()"
+                    >
+                        Cerrar Sesión
+                    </button>
+                </div>
+            </div>
+        </nav>
+
+        <div class="card card-wide">
+            <h2>Panel de Control</h2>
+            <p style="color: #666; margin: 20px 0;">
+                Bienvenido a tu portal de banca en línea. Desde aquí puedes gestionar tus cuentas, consultar saldos y solicitar préstamos.
+            </p>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-top: 30px;">
+                <a href="consulta-saldo.html" style="text-decoration: none;">
+                    <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; border-radius: 10px; text-align: center; transition: transform 0.3s;" onmouseover="this.style.transform='translateY(-5px)'" onmouseout="this.style.transform='translateY(0)'">
+                        <div style="font-size: 48px; margin-bottom: 10px;">💰</div>
+                        <h3>Consultar Saldo</h3>
+                        <p style="font-size: 14px; opacity: 0.9; margin-top: 10px;">
+                            Revisa el estado de tus cuentas
+                        </p>
+                    </div>
+                </a>
+
+                <a href="solicitud-prestamo.html" style="text-decoration: none;">
+                    <div style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; padding: 30px; border-radius: 10px; text-align: center; transition: transform 0.3s;" onmouseover="this.style.transform='translateY(-5px)'" onmouseout="this.style.transform='translateY(0)'">
+                        <div style="font-size: 48px; margin-bottom: 10px;">📋</div>
+                        <h3>Solicitar Préstamo</h3>
+                        <p style="font-size: 14px; opacity: 0.9; margin-top: 10px;">
+                            Solicita un préstamo fácilmente
+                        </p>
+                    </div>
+                </a>
+
+                <a href="mis-solicitudes.html" style="text-decoration: none;">
+                    <div style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: white; padding: 30px; border-radius: 10px; text-align: center; transition: transform 0.3s;" onmouseover="this.style.transform='translateY(-5px)'" onmouseout="this.style.transform='translateY(0)'">
+                        <div style="font-size: 48px; margin-bottom: 10px;">📄</div>
+                        <h3>Mis Solicitudes</h3>
+                        <p style="font-size: 14px; opacity: 0.9; margin-top: 10px;">
+                            Revisa el estado de tus solicitudes
+                        </p>
+                    </div>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script src="utils.js"></script>
+    <script>
+        // Verificar autenticación
+        if (!requireAuth()) {
+            // Ya redirige en requireAuth()
+        }
+
+        // Mostrar nombre de usuario
+        const userData = getUserData();
+        if (userData && userData.nombre) {
+            document.getElementById('userWelcome').textContent = `Bienvenido, ${userData.nombre}`;
+        }
+    </script>
+<!-- Code injected by live-server -->
+<script>
+	// <![CDATA[  <-- For SVG support
+	if ('WebSocket' in window) {
+		(function () {
+			function refreshCSS() {
+				var sheets = [].slice.call(document.getElementsByTagName("link"));
+				var head = document.getElementsByTagName("head")[0];
+				for (var i = 0; i < sheets.length; ++i) {
+					var elem = sheets[i];
+					var parent = elem.parentElement || head;
+					parent.removeChild(elem);
+					var rel = elem.rel;
+					if (elem.href && typeof rel != "string" || rel.length == 0 || rel.toLowerCase() == "stylesheet") {
+						var url = elem.href.replace(/(&|\?)_cacheOverride=\d+/, '');
+						elem.href = url + (url.indexOf('?') >= 0 ? '&' : '?') + '_cacheOverride=' + (new Date().valueOf());
+					}
+					parent.appendChild(elem);
+				}
+			}
+			var protocol = window.location.protocol === 'http:' ? 'ws://' : 'wss://';
+			var address = protocol + window.location.host + window.location.pathname + '/ws';
+			var socket = new WebSocket(address);
+			socket.onmessage = function (msg) {
+				if (msg.data == 'reload') window.location.reload();
+				else if (msg.data == 'refreshcss') refreshCSS();
+			};
+			if (sessionStorage && !sessionStorage.getItem('IsThisFirstTime_Log_From_LiveServer')) {
+				console.log('Live reload enabled.');
+				sessionStorage.setItem('IsThisFirstTime_Log_From_LiveServer', true);
+			}
+		})();
+	}
+	else {
+		console.error('Upgrade your browser. This Browser is NOT supported WebSocket for Live-Reloading.');
+	}
+	// ]]>
+</script>
+</body>
+</html>

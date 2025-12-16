@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Solicitud de Préstamo - Banco Demo</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <nav class="navbar">
+            <div class="navbar-content">
+                <div class="nav-brand">🏦 Banco Demo</div>
+                
+                <ul class="nav-menu">
+                    <li><a href="dashboard.html">Dashboard</a></li>
+                    <li><a href="consulta-saldo.html" data-testid="nav-cuentas">Mis Cuentas</a></li>
+                    <li><a href="solicitud-prestamo.html" data-testid="nav-prestamos">Préstamos</a></li>
+                    <li><a href="mis-solicitudes.html">Mis Solicitudes</a></li>
+                </ul>
+                
+                <div class="nav-actions">
+                    <span class="user-welcome" id="userWelcome">Bienvenido, Usuario</span>
+                    <button class="btn-logout" onclick="logout()">Cerrar Sesión</button>
+                </div>
+            </div>
+        </nav>
+
+        <div class="card">
+            <h2>📋 Solicitud de Préstamo</h2>
+            <p style="color: #666; margin-bottom: 30px;">
+                Complete el formulario para solicitar su préstamo
+            </p>
+
+            <form id="prestamoForm">
+                <div class="form-group">
+                    <label for="input-monto">Monto del Préstamo (COP)</label>
+                    <input 
+                        type="number" 
+                        id="input-monto" 
+                        data-testid="input-monto"
+                        placeholder="1000000"
+                        min="1000000"
+                        max="100000000"
+                        step="100000"
+                        required
+                    >
+                    <span class="error-message">El monto debe ser entre $1,000,000 y $100,000,000</span>
+                </div>
+
+                <div class="form-group">
+                    <label for="select-plazo">Plazo (meses)</label>
+                    <select id="select-plazo" data-testid="select-plazo" required>
+                        <option value="">Seleccione el plazo</option>
+                        <option value="12">12 meses</option>
+                        <option value="24">24 meses</option>
+                        <option value="36">36 meses</option>
+                        <option value="48">48 meses</option>
+                        <option value="60">60 meses</option>
+                    </select>
+                    <span class="error-message">Por favor seleccione el plazo</span>
+                </div>
+
+                <div class="form-group">
+                    <label>Propósito del Préstamo</label>
+                    <div class="radio-group">
+                        <div class="radio-option">
+                            <input 
+                                type="radio" 
+                                id="radio-vehiculo" 
+                                name="proposito" 
+                                value="vehiculo"
+                                data-testid="radio-proposito-vehiculo"
+                                required
+                            >
+                            <label for="radio-vehiculo">Vehículo</label>
+                        </div>
+                        <div class="radio-option">
+                            <input 
+                                type="radio" 
+                                id="radio-vivienda" 
+                                name="proposito" 
+                                value="vivienda"
+                                data-testid="radio-proposito-vivienda"
+                            >
+                            <label for="radio-vivienda">Vivienda</label>
+                        </div>
+                        <div class="radio-option">
+                            <input 
+                                type="radio" 
+                                id="radio-personal" 
+                                name="proposito" 
+                                value="personal"
+                                data-testid="radio-proposito-personal"
+                            >
+                            <label for="radio-personal">Personal</label>
+                        </div>
+                    </div>
+                    <span class="error-message">Por favor seleccione el propósito</span>
+                </div>
+
+                <button 
+                    type="button" 
+                    class="btn btn-primary" 
+                    id="btn-calcular"
+                    data-testid="btn-calcular"
+                >
+                    Calcular Cuota
+                </button>
+            </form>
+
+            <div id="resultadoCalculo" class="result-box hidden">
+                <h3>Resultado del Cálculo</h3>
+                <div class="info-row">
+                    <span class="info-label">Cuota Mensual:</span>
+                    <span class="info-value" id="cuota-mensual" data-testid="cuota-mensual">$0</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Tasa de Interés:</span>
+                    <span class="info-value" id="tasa-interes" data-testid="tasa-interes">0%</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Total a Pagar:</span>
+                    <span class="info-value" id="total-pagar" data-testid="total-pagar">$0</span>
+                </div>
+            </div>
+
+            <div id="enviarSeccion" class="hidden">
+                <div class="checkbox-group">
+                    <input 
+                        type="checkbox" 
+                        id="checkbox-terminos" 
+                        data-testid="checkbox-terminos"
+                    >
+                    <label for="checkbox-terminos">
+                        Acepto los términos y condiciones del préstamo
+                    </label>
+                </div>
+
+                <button 
+                    type="button" 
+                    class="btn btn-success" 
+                    id="btn-enviar-solicitud"
+                    data-testid="btn-enviar-solicitud"
+                    disabled
+                >
+                    Enviar Solicitud
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="utils.js"></script>
+    <script>
+        // Verificar autenticación
+        if (!requireAuth()) {
+            // Ya redirige en requireAuth()
+        }
+
+        // Mostrar nombre de usuario
+        const userData = getUserData();
+        if (userData && userData.nombre) {
+            document.getElementById('userWelcome').textContent = `Bienvenido, ${userData.nombre}`;
+        }
+
+        // Elementos del DOM
+        const montoInput = document.getElementById('input-monto');
+        const plazoSelect = document.getElementById('select-plazo');
+        const btnCalcular = document.getElementById('btn-calcular');
+        const btnEnviar = document.getElementById('btn-enviar-solicitud');
+        const checkboxTerminos = document.getElementById('checkbox-terminos');
+        const resultadoCalculo = document.getElementById('resultadoCalculo');
+        const enviarSeccion = document.getElementById('enviarSeccion');
+
+        // Variables para almacenar el cálculo
+        let calculoActual = null;
+
+        // Limpiar errores al escribir
+        montoInput.addEventListener('input', () => clearFieldError('input-monto'));
+        plazoSelect.addEventListener('change', () => clearFieldError('select-plazo'));
+
+        // Habilitar/deshabilitar botón de enviar según checkbox
+        checkboxTerminos.addEventListener('change', () => {
+            btnEnviar.disabled = !checkboxTerminos.checked;
+        });
+
+        // Botón calcular
+        btnCalcular.addEventListener('click', async () => {
+            clearAllErrors();
+            
+            const monto = parseFloat(montoInput.value);
+            const plazo = parseInt(plazoSelect.value);
+            const proposito = document.querySelector('input[name="proposito"]:checked')?.value;
+            
+            // Validaciones
+            let hasErrors = false;
+            
+            if (!monto || monto < 1000000 || monto > 100000000) {
+                showFieldError('input-monto', 'El monto debe ser entre $1,000,000 y $100,000,000');
+                hasErrors = true;
+            }
+            
+            if (!plazo) {
+                showFieldError('select-plazo', 'Por favor seleccione el plazo');
+                hasErrors = true;
+            }
+            
+            if (!proposito) {
+                showToast('Por favor seleccione el propósito del préstamo', 'error');
+                hasErrors = true;
+            }
+            
+            if (hasErrors) return;
+            
+            // Deshabilitar botón y mostrar spinner
+            btnCalcular.disabled = true;
+            btnCalcular.innerHTML = '<span class="spinner"></span> Calculando...';
+            
+            try {
+                const response = await fetchWithAuth('/api/prestamos/calcular', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        monto: monto,
+                        plazoMeses: plazo,
+                        proposito: proposito
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Error al calcular la cuota');
+                }
+                
+                const data = await response.json();
+                calculoActual = { monto, plazo, proposito, ...data };
+                
+                // Mostrar resultados
+                document.getElementById('cuota-mensual').textContent = formatCurrency(data.cuotaMensual);
+                document.getElementById('tasa-interes').textContent = `${data.tasaInteres}%`;
+                document.getElementById('total-pagar').textContent = formatCurrency(data.totalPagar);
+                
+                resultadoCalculo.classList.remove('hidden');
+                enviarSeccion.classList.remove('hidden');
+                
+                showToast('Cálculo realizado exitosamente', 'success');
+                
+            } catch (error) {
+                console.error('Error al calcular:', error);
+                showToast('Error al calcular la cuota', 'error');
+            } finally {
+                btnCalcular.disabled = false;
+                btnCalcular.innerHTML = 'Calcular Cuota';
+            }
+        });
+
+        // Botón enviar solicitud
+        btnEnviar.addEventListener('click', async () => {
+            if (!calculoActual) {
+                showToast('Primero debe calcular la cuota', 'error');
+                return;
+            }
+            
+            if (!checkboxTerminos.checked) {
+                showToast('Debe aceptar los términos y condiciones', 'error');
+                return;
+            }
+            
+            // Deshabilitar botón y mostrar spinner
+            btnEnviar.disabled = true;
+            btnEnviar.innerHTML = '<span class="spinner" data-testid="spinner"></span> Enviando...';
+            
+            try {
+                const response = await fetchWithAuth('/api/prestamos/solicitar', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        monto: calculoActual.monto,
+                        plazoMeses: calculoActual.plazo,
+                        proposito: calculoActual.proposito,
+                        userId: userData.id
+                    })
+                });
+                
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || 'Error al enviar la solicitud');
+                }
+                
+                const data = await response.json();
+                
+                // Mostrar toast de éxito
+                showToast('¡Solicitud enviada exitosamente!', 'success');
+                
+                // Redirigir después de 2 segundos
+                setTimeout(() => {
+                    window.location.href = 'mis-solicitudes.html';
+                }, 2000);
+                
+            } catch (error) {
+                console.error('Error al enviar solicitud:', error);
+                showToast(error.message || 'Error al enviar la solicitud', 'error');
+                btnEnviar.disabled = false;
+                btnEnviar.innerHTML = 'Enviar Solicitud';
+            }
+        });
+    </script>
+<!-- Code injected by live-server -->
+<script>
+	// <![CDATA[  <-- For SVG support
+	if ('WebSocket' in window) {
+		(function () {
+			function refreshCSS() {
+				var sheets = [].slice.call(document.getElementsByTagName("link"));
+				var head = document.getElementsByTagName("head")[0];
+				for (var i = 0; i < sheets.length; ++i) {
+					var elem = sheets[i];
+					var parent = elem.parentElement || head;
+					parent.removeChild(elem);
+					var rel = elem.rel;
+					if (elem.href && typeof rel != "string" || rel.length == 0 || rel.toLowerCase() == "stylesheet") {
+						var url = elem.href.replace(/(&|\?)_cacheOverride=\d+/, '');
+						elem.href = url + (url.indexOf('?') >= 0 ? '&' : '?') + '_cacheOverride=' + (new Date().valueOf());
+					}
+					parent.appendChild(elem);
+				}
+			}
+			var protocol = window.location.protocol === 'http:' ? 'ws://' : 'wss://';
+			var address = protocol + window.location.host + window.location.pathname + '/ws';
+			var socket = new WebSocket(address);
+			socket.onmessage = function (msg) {
+				if (msg.data == 'reload') window.location.reload();
+				else if (msg.data == 'refreshcss') refreshCSS();
+			};
+			if (sessionStorage && !sessionStorage.getItem('IsThisFirstTime_Log_From_LiveServer')) {
+				console.log('Live reload enabled.');
+				sessionStorage.setItem('IsThisFirstTime_Log_From_LiveServer', true);
+			}
+		})();
+	}
+	else {
+		console.error('Upgrade your browser. This Browser is NOT supported WebSocket for Live-Reloading.');
+	}
+	// ]]>
+</script>
+</body>
+</html>

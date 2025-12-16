@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mis Solicitudes - Banco Demo</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <nav class="navbar">
+            <div class="navbar-content">
+                <div class="nav-brand">🏦 Banco Demo</div>
+                
+                <ul class="nav-menu">
+                    <li><a href="dashboard.html">Dashboard</a></li>
+                    <li><a href="consulta-saldo.html" data-testid="nav-cuentas">Mis Cuentas</a></li>
+                    <li><a href="solicitud-prestamo.html" data-testid="nav-prestamos">Préstamos</a></li>
+                    <li><a href="mis-solicitudes.html">Mis Solicitudes</a></li>
+                </ul>
+                
+                <div class="nav-actions">
+                    <span class="user-welcome" id="userWelcome">Bienvenido, Usuario</span>
+                    <button class="btn-logout" onclick="logout()">Cerrar Sesión</button>
+                </div>
+            </div>
+        </nav>
+
+        <div class="card card-wide">
+            <h2>📄 Mis Solicitudes de Préstamo</h2>
+            <p style="color: #666; margin-bottom: 30px;">
+                Historial de solicitudes realizadas
+            </p>
+
+            <div id="loadingState" style="text-align: center; padding: 40px;">
+                <div class="spinner" style="margin: 0 auto;"></div>
+                <p style="color: #666; margin-top: 20px;">Cargando solicitudes...</p>
+            </div>
+
+            <div id="solicitudesContainer" class="hidden">
+                <div id="solicitudesGrid" class="solicitudes-grid">
+                    <!-- Las solicitudes se cargarán dinámicamente aquí -->
+                </div>
+            </div>
+
+            <div id="emptyState" class="hidden">
+                <div class="empty-state">
+                    <div class="empty-state-icon">📄</div>
+                    <h3>No hay solicitudes</h3>
+                    <p>Aún no has realizado ninguna solicitud de préstamo</p>
+                    <button 
+                        class="btn btn-primary" 
+                        onclick="window.location.href='solicitud-prestamo.html'"
+                        style="max-width: 300px; margin: 20px auto;"
+                    >
+                        Solicitar Préstamo
+                    </button>
+                </div>
+            </div>
+
+            <div id="errorState" class="hidden">
+                <div class="empty-state">
+                    <div class="empty-state-icon">❌</div>
+                    <h3>Error al cargar solicitudes</h3>
+                    <p id="errorMessage">No se pudo obtener la información</p>
+                    <button 
+                        class="btn btn-primary" 
+                        onclick="loadSolicitudes()"
+                        style="max-width: 300px; margin: 20px auto;"
+                    >
+                        Intentar nuevamente
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="utils.js"></script>
+    <script>
+        // Verificar autenticación
+        if (!requireAuth()) {
+            // Ya redirige en requireAuth()
+        }
+
+        // Mostrar nombre de usuario
+        const userData = getUserData();
+        if (userData && userData.nombre) {
+            document.getElementById('userWelcome').textContent = `Bienvenido, ${userData.nombre}`;
+        }
+
+        // Elementos del DOM
+        const loadingState = document.getElementById('loadingState');
+        const solicitudesContainer = document.getElementById('solicitudesContainer');
+        const solicitudesGrid = document.getElementById('solicitudesGrid');
+        const emptyState = document.getElementById('emptyState');
+        const errorState = document.getElementById('errorState');
+
+        // Cargar solicitudes al iniciar
+        loadSolicitudes();
+
+        async function loadSolicitudes() {
+            // Mostrar estado de carga
+            loadingState.classList.remove('hidden');
+            solicitudesContainer.classList.add('hidden');
+            emptyState.classList.add('hidden');
+            errorState.classList.add('hidden');
+
+            try {
+                const userId = userData.id;
+                const response = await fetchWithAuth(`/api/prestamos/solicitudes?userId=${userId}`);
+                
+                if (!response.ok) {
+                    throw new Error('Error al obtener las solicitudes');
+                }
+                
+                const solicitudes = await response.json();
+                
+                loadingState.classList.add('hidden');
+                
+                if (!solicitudes || solicitudes.length === 0) {
+                    emptyState.classList.remove('hidden');
+                    return;
+                }
+                
+                // Renderizar solicitudes
+                solicitudesGrid.innerHTML = '';
+                solicitudes.forEach((solicitud, index) => {
+                    const card = createSolicitudCard(solicitud, index);
+                    solicitudesGrid.appendChild(card);
+                });
+                
+                solicitudesContainer.classList.remove('hidden');
+                
+            } catch (error) {
+                console.error('Error al cargar solicitudes:', error);
+                document.getElementById('errorMessage').textContent = 
+                    error.message || 'No se pudo obtener la información';
+                
+                loadingState.classList.add('hidden');
+                errorState.classList.remove('hidden');
+            }
+        }
+
+        function createSolicitudCard(solicitud, index) {
+            const card = document.createElement('div');
+            card.className = 'solicitud-card';
+            card.setAttribute('data-testid', 'solicitud-card');
+            
+            // Determinar clase de estado
+            const estadoClass = solicitud.estado ? 
+                `estado-${solicitud.estado.toLowerCase()}` : 
+                'estado-pendiente';
+            
+            card.innerHTML = `
+                <div class="solicitud-header">
+                    <span class="numero-solicitud" data-testid="numero-solicitud">
+                        #${solicitud.id || (1000 + index)}
+                    </span>
+                    <span class="estado-solicitud ${estadoClass}" data-testid="estado-solicitud">
+                        ${solicitud.estado || 'PENDIENTE'}
+                    </span>
+                </div>
+                
+                <div class="solicitud-detail">
+                    <span class="detail-label">Monto:</span>
+                    <span class="detail-value">${formatCurrency(solicitud.monto)}</span>
+                </div>
+                
+                <div class="solicitud-detail">
+                    <span class="detail-label">Plazo:</span>
+                    <span class="detail-value">${solicitud.plazoMeses} meses</span>
+                </div>
+                
+                <div class="solicitud-detail">
+                    <span class="detail-label">Cuota Mensual:</span>
+                    <span class="detail-value">${formatCurrency(solicitud.cuotaMensual || 0)}</span>
+                </div>
+                
+                <div class="solicitud-detail">
+                    <span class="detail-label">Propósito:</span>
+                    <span class="detail-value" style="text-transform: capitalize;">
+                        ${solicitud.proposito || '-'}
+                    </span>
+                </div>
+                
+                <div class="solicitud-detail" style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #e1e8ed;">
+                    <span class="detail-label">Fecha:</span>
+                    <span class="detail-value" style="font-size: 12px;">
+                        ${solicitud.fechaSolicitud ? formatDate(solicitud.fechaSolicitud) : 'Reciente'}
+                    </span>
+                </div>
+            `;
+            
+            return card;
+        }
+    </script>
+<!-- Code injected by live-server -->
+<script>
+	// <![CDATA[  <-- For SVG support
+	if ('WebSocket' in window) {
+		(function () {
+			function refreshCSS() {
+				var sheets = [].slice.call(document.getElementsByTagName("link"));
+				var head = document.getElementsByTagName("head")[0];
+				for (var i = 0; i < sheets.length; ++i) {
+					var elem = sheets[i];
+					var parent = elem.parentElement || head;
+					parent.removeChild(elem);
+					var rel = elem.rel;
+					if (elem.href && typeof rel != "string" || rel.length == 0 || rel.toLowerCase() == "stylesheet") {
+						var url = elem.href.replace(/(&|\?)_cacheOverride=\d+/, '');
+						elem.href = url + (url.indexOf('?') >= 0 ? '&' : '?') + '_cacheOverride=' + (new Date().valueOf());
+					}
+					parent.appendChild(elem);
+				}
+			}
+			var protocol = window.location.protocol === 'http:' ? 'ws://' : 'wss://';
+			var address = protocol + window.location.host + window.location.pathname + '/ws';
+			var socket = new WebSocket(address);
+			socket.onmessage = function (msg) {
+				if (msg.data == 'reload') window.location.reload();
+				else if (msg.data == 'refreshcss') refreshCSS();
+			};
+			if (sessionStorage && !sessionStorage.getItem('IsThisFirstTime_Log_From_LiveServer')) {
+				console.log('Live reload enabled.');
+				sessionStorage.setItem('IsThisFirstTime_Log_From_LiveServer', true);
+			}
+		})();
+	}
+	else {
+		console.error('Upgrade your browser. This Browser is NOT supported WebSocket for Live-Reloading.');
+	}
+	// ]]>
+</script>
+</body>
+</html>

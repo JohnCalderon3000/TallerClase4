@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Consulta de Saldo - Banco Demo</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <nav class="navbar">
+            <div class="navbar-content">
+                <div class="nav-brand">🏦 Banco Demo</div>
+                
+                <ul class="nav-menu">
+                    <li><a href="dashboard.html">Dashboard</a></li>
+                    <li><a href="consulta-saldo.html" data-testid="nav-cuentas">Mis Cuentas</a></li>
+                    <li><a href="solicitud-prestamo.html" data-testid="nav-prestamos">Préstamos</a></li>
+                    <li><a href="mis-solicitudes.html">Mis Solicitudes</a></li>
+                </ul>
+                
+                <div class="nav-actions">
+                    <span class="user-welcome" id="userWelcome">Bienvenido, Usuario</span>
+                    <button class="btn-logout" onclick="logout()">Cerrar Sesión</button>
+                </div>
+            </div>
+        </nav>
+
+        <div class="card">
+            <h2>💰 Consulta de Saldo</h2>
+            <p style="color: #666; margin-bottom: 30px;">
+                Información de tu cuenta bancaria
+            </p>
+
+            <div id="loadingState" style="text-align: center; padding: 40px;">
+                <div class="spinner" style="margin: 0 auto;"></div>
+                <p style="color: #666; margin-top: 20px;">Cargando información...</p>
+            </div>
+
+            <div id="saldoContent" class="hidden">
+                <div class="info-section">
+                    <div class="info-row">
+                        <span class="info-label">Número de Cuenta:</span>
+                        <span class="info-value" id="cuenta-numero" data-testid="cuenta-numero">
+                            **** **** 0000
+                        </span>
+                    </div>
+                    
+                    <div class="info-row">
+                        <span class="info-label">Tipo de Cuenta:</span>
+                        <span class="info-value" id="tipo-cuenta" data-testid="tipo-cuenta">
+                            -
+                        </span>
+                    </div>
+                    
+                    <div class="info-row">
+                        <span class="info-label">Saldo Disponible:</span>
+                        <span class="info-value saldo-amount" id="saldo-amount" data-testid="saldo-amount">
+                            $0 COP
+                        </span>
+                    </div>
+                </div>
+
+                <button 
+                    class="btn btn-secondary" 
+                    onclick="window.location.href='dashboard.html'"
+                >
+                    Volver al Dashboard
+                </button>
+            </div>
+
+            <div id="errorState" class="hidden">
+                <div class="empty-state">
+                    <div class="empty-state-icon">❌</div>
+                    <h3>Error al cargar la información</h3>
+                    <p id="errorMessage">No se pudo obtener la información de la cuenta</p>
+                    <button 
+                        class="btn btn-primary" 
+                        onclick="loadSaldo()"
+                        style="max-width: 300px; margin: 20px auto;"
+                    >
+                        Intentar nuevamente
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="utils.js"></script>
+    <script>
+        // Verificar autenticación
+        if (!requireAuth()) {
+            // Ya redirige en requireAuth()
+        }
+
+        // Mostrar nombre de usuario
+        const userData = getUserData();
+        if (userData && userData.nombre) {
+            document.getElementById('userWelcome').textContent = `Bienvenido, ${userData.nombre}`;
+        }
+
+        // Elementos del DOM
+        const loadingState = document.getElementById('loadingState');
+        const saldoContent = document.getElementById('saldoContent');
+        const errorState = document.getElementById('errorState');
+
+        // Cargar saldo al iniciar
+        loadSaldo();
+
+        async function loadSaldo() {
+            // Mostrar estado de carga
+            loadingState.classList.remove('hidden');
+            saldoContent.classList.add('hidden');
+            errorState.classList.add('hidden');
+
+            try {
+                const userId = userData.id;
+                const response = await fetchWithAuth(`/api/cuentas/saldo?userId=${userId}`);
+                
+                if (!response.ok) {
+                    throw new Error('Error al obtener el saldo');
+                }
+                
+                const data = await response.json();
+                
+                // Mostrar información
+                document.getElementById('cuenta-numero').textContent = maskAccountNumber(data.numeroCuenta);
+                document.getElementById('tipo-cuenta').textContent = data.tipoCuenta || 'Cuenta de Ahorros';
+                document.getElementById('saldo-amount').textContent = formatCurrency(data.saldo);
+                
+                // Mostrar contenido
+                loadingState.classList.add('hidden');
+                saldoContent.classList.remove('hidden');
+                
+            } catch (error) {
+                console.error('Error al cargar saldo:', error);
+                document.getElementById('errorMessage').textContent = 
+                    error.message || 'No se pudo obtener la información de la cuenta';
+                
+                loadingState.classList.add('hidden');
+                errorState.classList.remove('hidden');
+            }
+        }
+    </script>
+<!-- Code injected by live-server -->
+<script>
+	// <![CDATA[  <-- For SVG support
+	if ('WebSocket' in window) {
+		(function () {
+			function refreshCSS() {
+				var sheets = [].slice.call(document.getElementsByTagName("link"));
+				var head = document.getElementsByTagName("head")[0];
+				for (var i = 0; i < sheets.length; ++i) {
+					var elem = sheets[i];
+					var parent = elem.parentElement || head;
+					parent.removeChild(elem);
+					var rel = elem.rel;
+					if (elem.href && typeof rel != "string" || rel.length == 0 || rel.toLowerCase() == "stylesheet") {
+						var url = elem.href.replace(/(&|\?)_cacheOverride=\d+/, '');
+						elem.href = url + (url.indexOf('?') >= 0 ? '&' : '?') + '_cacheOverride=' + (new Date().valueOf());
+					}
+					parent.appendChild(elem);
+				}
+			}
+			var protocol = window.location.protocol === 'http:' ? 'ws://' : 'wss://';
+			var address = protocol + window.location.host + window.location.pathname + '/ws';
+			var socket = new WebSocket(address);
+			socket.onmessage = function (msg) {
+				if (msg.data == 'reload') window.location.reload();
+				else if (msg.data == 'refreshcss') refreshCSS();
+			};
+			if (sessionStorage && !sessionStorage.getItem('IsThisFirstTime_Log_From_LiveServer')) {
+				console.log('Live reload enabled.');
+				sessionStorage.setItem('IsThisFirstTime_Log_From_LiveServer', true);
+			}
+		})();
+	}
+	else {
+		console.error('Upgrade your browser. This Browser is NOT supported WebSocket for Live-Reloading.');
+	}
+	// ]]>
+</script>
+</body>
+</html>
