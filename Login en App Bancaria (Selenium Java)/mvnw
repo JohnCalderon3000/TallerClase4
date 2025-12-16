@@ -1,0 +1,5 @@
+#!/usr/bin/env sh
+# Minimal mvnw stub that executes the maven-wrapper jar
+BASEDIR=$(cd "$(dirname "$0")" && pwd)
+JAVA=java
+exec "$JAVA" -jar "$BASEDIR/.mvn/wrapper/maven-wrapper.jar" "$@"
