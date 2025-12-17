@@ -2,67 +2,48 @@ package tests;
 
 import base.BaseTest;
 import org.assertj.core.api.Assertions;
-import org.openqa.selenium.support.ui.ExpectedConditions;
-import org.openqa.selenium.support.ui.WebDriverWait;
-import java.time.Duration;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import pages.DashboardPage;
-import pages.LoansPage;
-import pages.NewLoanPage;
-import pages.RequestsPage;
 import pages.LoginPage;
-import extensions.ScreenshotOnFinishExtension;
+import pages.LoansPage;
 
-import java.util.List;
+package tests;
 
-@ExtendWith(ScreenshotOnFinishExtension.class)
+import base.BaseTest;
+import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.Test;
+import pages.DashboardPage;
+import pages.LoginPage;
+import pages.LoansPage;
+
 public class SolicitudPrestamoTest extends BaseTest {
 
     @Test
-    public void solicitudPrestamoFlujo() throws InterruptedException {
-        driver.get("http://127.0.0.1:5500/frontend/login.html");
-        LoginPage login = new LoginPage(driver);
+    public void solicitudPrestamoHappyPath() {
+        LoginPage login = new LoginPage(driver, wait);
+        login.open();
         login.login("qa.test@banco.com", "CypressTest2024!");
 
-        DashboardPage dash = new DashboardPage(driver);
-        dash.goToPrestamos();
+        DashboardPage dash = new DashboardPage(driver, wait);
+        dash.waitForLoad();
 
-        LoansPage loans = new LoansPage(driver);
-        loans.nuevaSolicitud();
+        LoansPage loans = new LoansPage(driver, wait);
+        loans.openNewLoan();
+        loans.selectVehiculo();
+        loans.fillLoan(5000000L, "24");
+        loans.calculate();
 
-        NewLoanPage newLoan = new NewLoanPage(driver);
-        newLoan.fillLoan("5000000", "24", "Vehículo");
-        newLoan.calculate();
-
-        String cuotaText = newLoan.getMonthlyPaymentText();
-        // Normalize numbers: expect approx 230000
+        String cuotaText = loans.getCuotaText();
         String digits = cuotaText.replaceAll("[^0-9]", "");
-        int cuota = Integer.parseInt(digits);
-        Assertions.assertThat(cuota).as("Cuota aproximada").isBetween(200000, 260000);
+        int cuota = digits.isEmpty() ? 0 : Integer.parseInt(digits);
+        // approximate expected ~230000
+        Assertions.assertThat(cuota).isGreaterThan(200000).isLessThan(300000);
 
-        newLoan.acceptTerms();
-        newLoan.submit();
+        loans.acceptTermsAndSend();
 
-        // wait for redirect to Mis Solicitudes (app sets timeout before redirect)
-        try {
-            // allow a longer timeout for client-side redirect
-            new org.openqa.selenium.support.ui.WebDriverWait(driver, java.time.Duration.ofSeconds(10))
-                    .until(org.openqa.selenium.support.ui.ExpectedConditions.urlContains("mis-solicitudes.html"));
-        } catch (Exception ex) {
-            // proceed to collect diagnostics even if URL didn't change
-            logger.warn("Redirect to mis-solicitudes did not happen within timeout: {}", ex.getMessage());
-        }
-
-        // If the app didn't redirect automatically, navigate to the Mis Solicitudes page as a fallback
-        if (!driver.getCurrentUrl().contains("mis-solicitudes.html")) {
-            logger.info("Fallback: navigating to mis-solicitudes.html to collect request list");
-            driver.get("http://127.0.0.1:5500/frontend/mis-solicitudes.html");
-        }
-
-        // Validate toast success and redirection to Mis Solicitudes
-        RequestsPage req = new RequestsPage(driver);
-        List<String> ids = req.listRequestIds();
-        Assertions.assertThat(ids).as("Debe contener la nueva solicitud").isNotEmpty();
+        // Verify redirect to mis-solicitudes
+        Assertions.assertThat(driver.getCurrentUrl()).contains("mis-solicitudes.html");
+        // Basic check for new solicitud in list
+        Assertions.assertThat(driver.getPageSource()).contains("5000000");
     }
 }

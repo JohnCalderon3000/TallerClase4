@@ -1,0 +1,21 @@
+{
+  "user": {
+    "username": "test.qa@banco.com",
+    "password": "TestQA2024!",
+    "token": "fake-jwt-token"
+  },
+  "account": {
+    "id": "acct-123",
+    "mask": "**** 1234",
+    "balance": 1500000
+  },
+  "loanRequest": {
+    "amount": 6000000,
+    "term": 12,
+    "rate": 0.02
+  },
+  "calculation": {
+    "monthly": 46328.0
+  },
+  "loans": []
+}
